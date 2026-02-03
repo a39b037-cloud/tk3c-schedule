@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3C 賣場智慧排班系統 V29</title>
+    <title>3C 賣場智慧排班系統 V30</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -71,7 +71,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h2>🛒 智慧排班系統 V29</h2>
+        <h2>🛒 智慧排班系統 V30</h2>
         <div class="editor-box" id="editorBox">
             ✍️ 薪號：<input type="text" id="editorId" placeholder="必填" oninput="toggleLock()">
             <span id="lockStatus" style="color:var(--danger); font-size: 11px;">未解鎖</span>
@@ -106,7 +106,7 @@
 </div>
 
 <script>
-const titles = ["店經理", "服務專員", "收銀-晚P", "TV股副理", "生活家電副理", "APPLE專員", "系統股副理", "電氣醫生", "(13:30-21:30)", "(13:00-21:00)", "(12:30-21:30)"];
+const titles = ["店經理", "服務專員", "收銀-晚P", "TV股副理", "生活家電副理", "APPLE專員", "系統股副理", "電器醫生", "(13:30-21:30)", "(13:00-21:00)", "(12:30-21:30)"];
 const categories = ["", "2C", "APPLE", "1C", "國際", "LG", "SONY", "三星"];
 const defaultMembers = [
     { name: "謝易辰", id: "022403", phone: "0920-520765", cat: "", title: "店經理", type: "正職" },
@@ -141,6 +141,12 @@ function toggleLock() {
 }
 
 function initTable() {
+    // 優先從 LocalStorage 讀取已存的日期
+    const savedDate = localStorage.getItem('shiftStartDate');
+    if (savedDate) {
+        document.getElementById('startDate').value = savedDate;
+    }
+
     const start = new Date(document.getElementById('startDate').value);
     let header = `<th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>類別</th><th>姓名</th><th>薪號</th><th>電話</th><th>職稱</th><th>身份</th><th>統計</th>`;
     for(let i=0; i<28; i++){
@@ -163,7 +169,6 @@ function addRow(pre = null) {
     let catOpt = categories.map(c => `<option value="${c}" ${pre?.cat===c?'selected':''}>${c||'--'}</option>`).join('');
     let titleOpt = titles.map(t => `<option value="${t}" ${pre?.title===t?'selected':''}>${t}</option>`).join('');
     
-    // 勾選 + 姓名固定在左側
     let html = `<td><input type="checkbox" class="row-cb"></td>
         <td><select class="m-cat">${catOpt}</select></td>
         <td><input type="text" class="m-name" value="${pre?.name||''}" style="width:55px"></td>
@@ -173,7 +178,6 @@ function addRow(pre = null) {
         <td><select class="m-type" onchange="updateSummary()"><option value="正職" ${pre?.type==='正職'?'selected':''}>正職</option><option value="PT" ${pre?.type==='PT'?'selected':''}>PT</option><option value="駐場" ${pre?.type==='駐場'?'selected':''}>駐場</option></select></td>
         <td class="m-stat" style="font-size:10px">--</td>`;
     
-    // 排班選單：調整順序為 W > H > L
     for(let i=0; i<28; i++) {
         const v = pre?.days?.[i] || 'W';
         html += `<td><select class="d-status status-${v}" onchange="changeStatus(this, ${i})">
@@ -228,7 +232,6 @@ function autoDistributeHolidays() {
         let assignedL = 0, assignedH = 0, assignedN = 0;
         let biweek1L = 0, biweek2L = 0;
 
-        // 優先確保雙週各 2 天例假
         holidayIndices.forEach(idx => {
             if (idx < 14) {
                 if (biweek1L < 2 && assignedL < rL) { selects[idx].value = 'L'; assignedL++; biweek1L++; }
@@ -237,7 +240,6 @@ function autoDistributeHolidays() {
             }
         });
 
-        // 分配其餘假別
         holidayIndices.forEach(idx => {
             const sel = selects[idx];
             if (sel.value !== 'L' || (idx < 14 ? biweek1L : biweek2L) > 2 || assignedL > rL) {
@@ -282,11 +284,16 @@ function updateSummary() {
 }
 
 function saveToLocal() {
+    // 同時儲存班表內容與起始日期
+    const startDate = document.getElementById('startDate').value;
+    localStorage.setItem('shiftStartDate', startDate);
+
     const data = Array.from(document.querySelectorAll('#memberList tr')).map(tr => ({
         cat: tr.querySelector('.m-cat').value, name: tr.querySelector('.m-name').value, id: tr.querySelector('.m-id').value, phone: tr.querySelector('.m-phone').value,
         title: tr.querySelector('.m-title').value, type: tr.querySelector('.m-type').value, days: Array.from(tr.querySelectorAll('.d-status')).map(s => s.value)
     }));
-    localStorage.setItem('shiftData', JSON.stringify(data)); alert("儲存成功！");
+    localStorage.setItem('shiftData', JSON.stringify(data)); 
+    alert("儲存成功！(已記憶日期：" + startDate + ")");
 }
 
 function exportToExcel() {
