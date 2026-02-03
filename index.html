@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3C 賣場智慧排班系統 V25</title>
+    <title>3C 賣場智慧排班系統 V28</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -11,6 +11,7 @@
             --table-header: #2c3e50;
             --accent: #3498db;
             --danger: #e74c3c;
+            --log-panel: #1e1e1e;
             --weekend-bg: #ffe0e9; 
         }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 10px; background: var(--primary-bg); font-size: 13px; }
@@ -31,25 +32,24 @@
         table { width: 100%; border-collapse: collapse; white-space: nowrap; }
         th { background: var(--table-header); color: white; padding: 10px 5px; position: sticky; top: 0; z-index: 25; border: 1px solid #444; }
         
-        /* 固定左側欄位邏輯 */
         th:nth-child(-n+8), td:nth-child(-n+8) { position: sticky; z-index: 15; background: #fff; }
         th:nth-child(-n+8) { z-index: 26; background: var(--table-header); }
         
-        th:nth-child(1), td:nth-child(1) { left: 0; min-width: 45px; }   
-        th:nth-child(2), td:nth-child(2) { left: 45px; min-width: 55px; }  
-        th:nth-child(3), td:nth-child(3) { left: 100px; min-width: 60px; } 
-        th:nth-child(4), td:nth-child(4) { left: 160px; min-width: 55px; } 
-        th:nth-child(5), td:nth-child(5) { left: 215px; min-width: 85px; } 
-        th:nth-child(6), td:nth-child(6) { left: 300px; min-width: 85px; } 
-        th:nth-child(7), td:nth-child(7) { left: 385px; min-width: 55px; } 
-        th:nth-child(8), td:nth-child(8) { left: 440px; min-width: 65px; border-right: 2px solid #666; } 
+        th:nth-child(1), td:nth-child(1) { left: 0; min-width: 40px; }   /* 勾選 */
+        th:nth-child(2), td:nth-child(2) { left: 40px; min-width: 55px; }  
+        th:nth-child(3), td:nth-child(3) { left: 95px; min-width: 60px; } 
+        th:nth-child(4), td:nth-child(4) { left: 155px; min-width: 55px; } 
+        th:nth-child(5), td:nth-child(5) { left: 210px; min-width: 85px; } 
+        th:nth-child(6), td:nth-child(6) { left: 295px; min-width: 85px; } 
+        th:nth-child(7), td:nth-child(7) { left: 380px; min-width: 55px; } 
+        th:nth-child(8), td:nth-child(8) { left: 435px; min-width: 65px; border-right: 2px solid #666; } 
 
         td { border: 1px solid #dee2e6; padding: 6px 4px; text-align: center; }
         .weekend-col { background-color: var(--weekend-bg) !important; color: #c2185b; font-weight: bold; }
 
         .summary-row { background: #eceff1; font-weight: bold; position: sticky; z-index: 30; }
-        .summary-pro { bottom: 33px; border-top: 1px solid #999; height: 33px; } 
-        .summary-full { bottom: 0px; border-top: 1px solid #999; height: 33px; } 
+        .summary-pro { bottom: 31px; border-top: 1px solid #999; height: 31px; } 
+        .summary-full { bottom: 0px; border-top: 1px solid #999; height: 31px; } 
         .pro-staff { color: #c0392b; background-color: #fdeaea !important; } 
         .full-staff { color: #2980b9; background-color: #e8f4fd !important; }
         
@@ -71,7 +71,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h2>🛒 智慧排班系統 V25</h2>
+        <h2>🛒 智慧排班系統 V28</h2>
         <div class="editor-box" id="editorBox">
             ✍️ 薪號：<input type="text" id="editorId" placeholder="必填" oninput="toggleLock()">
             <span id="lockStatus" style="color:var(--danger); font-size: 11px;">未解鎖</span>
@@ -83,7 +83,8 @@
         <div class="config-group">休 <input type="number" id="ruleH" value="4"></div>
         <div class="config-group">國 <input type="number" id="ruleN" value="1"></div>
         <input type="date" id="startDate" value="2026-02-01" onchange="initTable()">
-        <button class="btn" style="background:#8e44ad;color:white" onclick="autoDistributeHolidays()">✨ 自動分配</button>
+        <button class="btn" style="background:#8e44ad;color:white" onclick="autoDistributeHolidays()">✨ 批量分配</button>
+        <button class="btn" style="background:#e74c3c;color:white" onclick="deleteSelectedRows()">🗑️ 刪除選中</button>
         <button class="btn" style="background:#e67e22;color:white" onclick="resetAllShifts()">🔄 重置假別</button>
         <button class="btn" style="background:#f39c12;color:white" onclick="saveToLocal()">💾 儲存</button>
         <button class="btn" style="background:#27ae60;color:white" onclick="exportToExcel()">📊 Excel</button>
@@ -96,6 +97,11 @@
             <tbody id="memberList"></tbody>
             <tfoot id="statFoot"></tfoot>
         </table>
+    </div>
+
+    <div class="log-section" style="margin-top: 20px; background: #1e1e1e; color: #81c784; padding: 12px; border-radius: 8px;">
+        <div style="color: white; border-bottom: 1px solid #333; margin-bottom: 5px; font-weight: bold;">📜 操作履歷</div>
+        <div id="logList" style="height: 100px; overflow-y: auto; font-size: 11px; font-family: monospace;">系統就緒...</div>
     </div>
 </div>
 
@@ -136,7 +142,7 @@ function toggleLock() {
 
 function initTable() {
     const start = new Date(document.getElementById('startDate').value);
-    let header = `<th>操作</th><th>類別</th><th>姓名</th><th>薪號</th><th>電話</th><th>職稱</th><th>身份</th><th>統計</th>`;
+    let header = `<th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>類別</th><th>姓名</th><th>薪號</th><th>電話</th><th>職稱</th><th>身份</th><th>統計</th>`;
     for(let i=0; i<28; i++){
         const d = new Date(start); d.setDate(start.getDate() + i);
         header += `<th class="${d.getDay()===0||d.getDay()===6?'weekend-col':''}">${d.getMonth()+1}/${d.getDate()}<br>${['日','一','二','三','四','五','六'][d.getDay()]}</th>`;
@@ -148,11 +154,15 @@ function initTable() {
     updateSummary();
 }
 
+function toggleSelectAll(mainCb) {
+    document.querySelectorAll('.row-cb').forEach(cb => cb.checked = mainCb.checked);
+}
+
 function addRow(pre = null) {
     const tr = document.createElement('tr');
     let catOpt = categories.map(c => `<option value="${c}" ${pre?.cat===c?'selected':''}>${c||'--'}</option>`).join('');
     let titleOpt = titles.map(t => `<option value="${t}" ${pre?.title===t?'selected':''}>${t}</option>`).join('');
-    let html = `<td><button class="btn" style="background:#e74c3c;color:white;padding:2px 5px" onclick="if(confirm('確定刪除？')){this.closest('tr').remove();updateSummary();}">刪</button></td>
+    let html = `<td><input type="checkbox" class="row-cb"></td>
         <td><select class="m-cat">${catOpt}</select></td>
         <td><input type="text" class="m-name" value="${pre?.name||''}" style="width:55px"></td>
         <td><input type="text" class="m-id" value="${pre?.id||''}" style="width:50px"></td>
@@ -162,7 +172,7 @@ function addRow(pre = null) {
         <td class="m-stat" style="font-size:10px">--</td>`;
     for(let i=0; i<28; i++) {
         const v = pre?.days?.[i] || 'W';
-        html += `<td><select class="d-status status-${v}" onchange="changeStatus(this)">
+        html += `<td><select class="d-status status-${v}" onchange="changeStatus(this, ${i})">
             <option value="W" ${v==='W'?'selected':''}>上班</option><option value="L" ${v==='L'?'selected':''}>例假</option>
             <option value="H" ${v==='H'?'selected':''}>休假</option><option value="N" ${v==='N'?'selected':''}>國定</option>
             <option value="S" ${v==='S'?'selected':''}>特休</option><option value="D" ${v==='D'?'selected':''}>值星</option>
@@ -172,48 +182,77 @@ function addRow(pre = null) {
     document.getElementById('memberList').appendChild(tr);
 }
 
-function changeStatus(el) {
+function changeStatus(el, dayIdx) {
     el.className = 'd-status status-' + el.value;
+    const name = el.closest('tr').querySelector('.m-name').value;
+    const editor = document.getElementById('editorId').value;
+    const log = `[${new Date().toLocaleTimeString()}] ${editor} 修改 ${name} 第 ${dayIdx+1} 天為 ${el.options[el.selectedIndex].text}`;
+    document.getElementById('logList').insertAdjacentHTML('afterbegin', `<div>${log}</div>`);
     updateSummary();
 }
 
-function resetAllShifts() {
+function deleteSelectedRows() {
     const editor = document.getElementById('editorId').value;
-    if (!editor) { alert("請先輸入薪號解鎖後再執行重置。"); return; }
-    if (!confirm("⚠️ 確定要將【所有人員】的班表恢復為「上班 (W)」嗎？此動作無法復原。")) return;
-
-    document.querySelectorAll('.d-status').forEach(sel => {
-        sel.value = 'W';
-        sel.className = 'd-status status-W';
-    });
-    updateSummary();
-    alert("班表已重置為初始上班狀態。");
+    if (!editor) { alert("請先輸入薪號。"); return; }
+    const selected = document.querySelectorAll('.row-cb:checked');
+    if (selected.length === 0) { alert("請先勾選要刪除的人員。"); return; }
+    if (confirm(`確定要刪除選中的 ${selected.length} 位人員嗎？`)) {
+        selected.forEach(cb => cb.closest('tr').remove());
+        updateSummary();
+        document.getElementById('logList').insertAdjacentHTML('afterbegin', `<div style="color:red">[${new Date().toLocaleTimeString()}] ${editor} 批量刪除了人員</div>`);
+    }
 }
 
 function autoDistributeHolidays() {
     const editor = document.getElementById('editorId').value;
-    if (!editor) { alert("請先輸入薪號解鎖。"); return; }
-    if (!confirm("將根據設定的數量重新校正正職人員假別名稱。確定執行？")) return;
+    if (!editor) { alert("請先輸入薪號。"); return; }
+    const selectedRows = Array.from(document.querySelectorAll('.row-cb:checked')).map(cb => cb.closest('tr'));
+    if (selectedRows.length === 0) { alert("請先勾選要分配的人員。"); return; }
+    
+    if (!confirm(`將針對選中的 ${selectedRows.length} 位正職人員執行雙週例假優先分配。確定執行？`)) return;
 
     const rL = parseInt(document.getElementById('ruleL').value) || 0;
     const rH = parseInt(document.getElementById('ruleH').value) || 0;
     const rN = parseInt(document.getElementById('ruleN').value) || 0;
 
-    document.querySelectorAll('#memberList tr').forEach(row => {
+    selectedRows.forEach(row => {
         if (row.querySelector('.m-type').value !== '正職') return;
-        const holidaySelects = Array.from(row.querySelectorAll('.d-status')).filter(sel => !['W', 'D', 'C'].includes(sel.value));
+        const selects = Array.from(row.querySelectorAll('.d-status'));
+        const holidayIndices = selects.map((s, i) => (!['W', 'D', 'C'].includes(s.value)) ? i : -1).filter(i => i !== -1);
         
-        let l = 0, h = 0, n = 0;
-        holidaySelects.forEach(sel => {
-            if (l < rL) { sel.value = 'L'; l++; }
-            else if (h < rH) { sel.value = 'H'; h++; }
-            else if (n < rN) { sel.value = 'N'; n++; }
-            else { sel.value = 'S'; }
+        let assignedL = 0, assignedH = 0, assignedN = 0;
+        let biweek1L = 0, biweek2L = 0;
+
+        holidayIndices.forEach(idx => {
+            if (idx < 14) {
+                if (biweek1L < 2 && assignedL < rL) { selects[idx].value = 'L'; assignedL++; biweek1L++; }
+            } else {
+                if (biweek2L < 2 && assignedL < rL) { selects[idx].value = 'L'; assignedL++; biweek2L++; }
+            }
+        });
+
+        holidayIndices.forEach(idx => {
+            const sel = selects[idx];
+            if (sel.value !== 'L' || (idx < 14 ? biweek1L : biweek2L) > 2 || assignedL > rL) {
+                if (assignedL < rL) { sel.value = 'L'; assignedL++; }
+                else if (assignedH < rH) { sel.value = 'H'; assignedH++; }
+                else if (assignedN < rN) { sel.value = 'N'; assignedN++; }
+                else { sel.value = 'S'; }
+            }
             sel.className = 'd-status status-' + sel.value;
         });
     });
     updateSummary();
-    alert("分配完成！");
+    alert("批量分配完成！");
+}
+
+function resetAllShifts() {
+    const editor = document.getElementById('editorId').value;
+    if (!editor) { alert("請先輸入薪號。"); return; }
+    if (confirm("確定重置所有班表為上班 (W)？")) {
+        document.querySelectorAll('.d-status').forEach(s => { s.value = 'W'; s.className = 'd-status status-W'; });
+        updateSummary();
+    }
 }
 
 function updateSummary() {
@@ -233,6 +272,14 @@ function updateSummary() {
     foot += `</tr><tr class="summary-row summary-full"><td colspan="8" class="full-staff">全店人力</td>`;
     fullS.forEach(n => foot += `<td class="full-staff">${n}</td>`);
     document.getElementById('statFoot').innerHTML = foot;
+}
+
+function saveToLocal() {
+    const data = Array.from(document.querySelectorAll('#memberList tr')).map(tr => ({
+        cat: tr.querySelector('.m-cat').value, name: tr.querySelector('.m-name').value, id: tr.querySelector('.m-id').value, phone: tr.querySelector('.m-phone').value,
+        title: tr.querySelector('.m-title').value, type: tr.querySelector('.m-type').value, days: Array.from(tr.querySelectorAll('.d-status')).map(s => s.value)
+    }));
+    localStorage.setItem('shiftData', JSON.stringify(data)); alert("儲存成功！");
 }
 
 function exportToExcel() {
@@ -256,14 +303,6 @@ function exportToExcel() {
     });
     const wb = XLSX.utils.table_to_book(tableClone);
     XLSX.writeFile(wb, `排班表_${document.getElementById('startDate').value}.xlsx`);
-}
-
-function saveToLocal() {
-    const data = Array.from(document.querySelectorAll('#memberList tr')).map(tr => ({
-        cat: tr.querySelector('.m-cat').value, name: tr.querySelector('.m-name').value, id: tr.querySelector('.m-id').value, phone: tr.querySelector('.m-phone').value,
-        title: tr.querySelector('.m-title').value, type: tr.querySelector('.m-type').value, days: Array.from(tr.querySelectorAll('.d-status')).map(s => s.value)
-    }));
-    localStorage.setItem('shiftData', JSON.stringify(data)); alert("儲存成功！");
 }
 
 window.onload = initTable;
