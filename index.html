@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3C 賣場智慧排班系統 V23</title>
+    <title>3C 賣場智慧排班系統 V25</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -15,13 +15,12 @@
         }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 10px; background: var(--primary-bg); font-size: 13px; }
         .container { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
         .editor-box { background: #fff3cd; padding: 8px 15px; border-radius: 50px; border: 2px solid #ffeeba; display: flex; align-items: center; gap: 8px; }
         .editor-box.active { background: #d4edda; border-color: #c3e6cb; }
         #editorId { border: 1px solid #ccc; padding: 5px; border-radius: 4px; width: 70px; }
 
-        .config-panel { display: flex; gap: 10px; margin-bottom: 15px; padding: 12px; background: #e8f4fd; border-radius: 8px; align-items: center; flex-wrap: wrap; }
+        .config-panel { display: flex; gap: 8px; margin-bottom: 15px; padding: 12px; background: #e8f4fd; border-radius: 8px; align-items: center; flex-wrap: wrap; }
         .config-group { display: flex; align-items: center; gap: 5px; font-weight: bold; }
         .config-group input { width: 35px; text-align: center; }
 
@@ -32,53 +31,38 @@
         table { width: 100%; border-collapse: collapse; white-space: nowrap; }
         th { background: var(--table-header); color: white; padding: 10px 5px; position: sticky; top: 0; z-index: 25; border: 1px solid #444; }
         
-        /* 電腦版固定 8 欄邏輯 */
+        /* 固定左側欄位邏輯 */
         th:nth-child(-n+8), td:nth-child(-n+8) { position: sticky; z-index: 15; background: #fff; }
         th:nth-child(-n+8) { z-index: 26; background: var(--table-header); }
         
-        /* 電腦版各欄寬度與位置 */
-        th:nth-child(1), td:nth-child(1) { left: 0; min-width: 45px; }   /* 操作 */
-        th:nth-child(2), td:nth-child(2) { left: 45px; min-width: 55px; }  /* 類別 */
-        th:nth-child(3), td:nth-child(3) { left: 100px; min-width: 60px; } /* 姓名 */
-        th:nth-child(4), td:nth-child(4) { left: 160px; min-width: 55px; } /* 薪號 */
-        th:nth-child(5), td:nth-child(5) { left: 215px; min-width: 85px; } /* 電話 */
-        th:nth-child(6), td:nth-child(6) { left: 300px; min-width: 85px; } /* 職稱 */
-        th:nth-child(7), td:nth-child(7) { left: 385px; min-width: 55px; } /* 身份 */
-        th:nth-child(8), td:nth-child(8) { left: 440px; min-width: 65px; border-right: 2px solid #666; } /* 統計 */
+        th:nth-child(1), td:nth-child(1) { left: 0; min-width: 45px; }   
+        th:nth-child(2), td:nth-child(2) { left: 45px; min-width: 55px; }  
+        th:nth-child(3), td:nth-child(3) { left: 100px; min-width: 60px; } 
+        th:nth-child(4), td:nth-child(4) { left: 160px; min-width: 55px; } 
+        th:nth-child(5), td:nth-child(5) { left: 215px; min-width: 85px; } 
+        th:nth-child(6), td:nth-child(6) { left: 300px; min-width: 85px; } 
+        th:nth-child(7), td:nth-child(7) { left: 385px; min-width: 55px; } 
+        th:nth-child(8), td:nth-child(8) { left: 440px; min-width: 65px; border-right: 2px solid #666; } 
 
         td { border: 1px solid #dee2e6; padding: 6px 4px; text-align: center; }
         .weekend-col { background-color: var(--weekend-bg) !important; color: #c2185b; font-weight: bold; }
 
-        /* 底部固定人力統計 */
         .summary-row { background: #eceff1; font-weight: bold; position: sticky; z-index: 30; }
         .summary-pro { bottom: 33px; border-top: 1px solid #999; height: 33px; } 
         .summary-full { bottom: 0px; border-top: 1px solid #999; height: 33px; } 
         .pro-staff { color: #c0392b; background-color: #fdeaea !important; } 
         .full-staff { color: #2980b9; background-color: #e8f4fd !important; }
         
-        .status-L, .status-H, .status-N, .status-S { color: red !important; font-weight: bold; }
+        .status-L, .status-H, .status-N, .status-S, .status-C { color: red !important; font-weight: bold; }
         .status-D { background-color: #fff9c4 !important; font-weight: bold; border: 1px solid #fbc02d; }
         
         select { border: 1px solid #ccc; border-radius: 4px; padding: 4px 2px; font-size: 13px; height: 28px; }
-        .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn { padding: 8px 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
 
-        /* --- 手機版優化：只留下姓名欄位 --- */
         @media screen and (max-width: 600px) {
-            /* 隱藏：操作(1), 類別(2), 薪號(4), 電話(5), 職稱(6), 身份(7) */
-            th:nth-child(1), td:nth-child(1),
-            th:nth-child(2), td:nth-child(2),
-            th:nth-child(4), td:nth-child(4),
-            th:nth-child(5), td:nth-child(5),
-            th:nth-child(6), td:nth-child(6),
-            th:nth-child(7), td:nth-child(7) {
-                display: none !important;
-            }
-
-            /* 重新定位姓名(3)與統計(8) */
+            th:nth-child(1), td:nth-child(1), th:nth-child(2), td:nth-child(2), th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5), th:nth-child(6), td:nth-child(6), th:nth-child(7), td:nth-child(7) { display: none !important; }
             th:nth-child(3), td:nth-child(3) { left: 0 !important; min-width: 60px; }
             th:nth-child(8), td:nth-child(8) { left: 60px !important; min-width: 65px; border-right: 2px solid #666; }
-
-            /* 修正統計列的文字位移 */
             .summary-row td:first-child { display: table-cell !important; left: 0 !important; width: 125px; }
         }
     </style>
@@ -87,18 +71,20 @@
 
 <div class="container">
     <div class="top-bar">
-        <h2>🛒 智慧排班系統 V23</h2>
+        <h2>🛒 智慧排班系統 V25</h2>
         <div class="editor-box" id="editorBox">
             ✍️ 薪號：<input type="text" id="editorId" placeholder="必填" oninput="toggleLock()">
-            <span id="lockStatus" style="color:var(--danger); font-size: 11px;">解鎖中...</span>
+            <span id="lockStatus" style="color:var(--danger); font-size: 11px;">未解鎖</span>
         </div>
     </div>
 
     <div class="config-panel">
-        <div class="config-group">例 <input type="number" id="ruleL" value="4" onchange="updateSummary()"></div>
-        <div class="config-group">休 <input type="number" id="ruleH" value="4" onchange="updateSummary()"></div>
-        <div class="config-group">國 <input type="number" id="ruleN" value="1" onchange="updateSummary()"></div>
-        <input type="date" id="startDate" value="2026-02-01" onchange="initTable()" style="font-size:12px;">
+        <div class="config-group">例 <input type="number" id="ruleL" value="4"></div>
+        <div class="config-group">休 <input type="number" id="ruleH" value="4"></div>
+        <div class="config-group">國 <input type="number" id="ruleN" value="1"></div>
+        <input type="date" id="startDate" value="2026-02-01" onchange="initTable()">
+        <button class="btn" style="background:#8e44ad;color:white" onclick="autoDistributeHolidays()">✨ 自動分配</button>
+        <button class="btn" style="background:#e67e22;color:white" onclick="resetAllShifts()">🔄 重置假別</button>
         <button class="btn" style="background:#f39c12;color:white" onclick="saveToLocal()">💾 儲存</button>
         <button class="btn" style="background:#27ae60;color:white" onclick="exportToExcel()">📊 Excel</button>
     </div>
@@ -114,7 +100,7 @@
 </div>
 
 <script>
-const titles = ["店經理", "服務專員", "收銀-晚P", "TV股副理", "生活家電副理", "APPLE專員", "系統股副理", "電氣醫生", "(13:30-21:30)", "(13:00-21:00)", "(12:30-21:30)"];
+const titles = ["店經理", "服務專員", "收銀-晚P", "TV股副理", "生活家電副理", "APPLE專員", "系統股副理", "電器醫生", "(13:30-21:30)", "(13:00-21:00)", "(12:30-21:30)"];
 const categories = ["", "2C", "APPLE", "1C", "國際", "LG", "SONY", "三星"];
 const defaultMembers = [
     { name: "謝易辰", id: "022403", phone: "0920-520765", cat: "", title: "店經理", type: "正職" },
@@ -176,7 +162,7 @@ function addRow(pre = null) {
         <td class="m-stat" style="font-size:10px">--</td>`;
     for(let i=0; i<28; i++) {
         const v = pre?.days?.[i] || 'W';
-        html += `<td><select class="d-status status-${v}" onchange="changeStatus(this, ${i})">
+        html += `<td><select class="d-status status-${v}" onchange="changeStatus(this)">
             <option value="W" ${v==='W'?'selected':''}>上班</option><option value="L" ${v==='L'?'selected':''}>例假</option>
             <option value="H" ${v==='H'?'selected':''}>休假</option><option value="N" ${v==='N'?'selected':''}>國定</option>
             <option value="S" ${v==='S'?'selected':''}>特休</option><option value="D" ${v==='D'?'selected':''}>值星</option>
@@ -186,24 +172,48 @@ function addRow(pre = null) {
     document.getElementById('memberList').appendChild(tr);
 }
 
-function changeStatus(el, dayIdx) {
-    const row = el.closest('tr');
-    const name = row.querySelector('.m-name').value;
-    const type = row.querySelector('.m-type').value;
+function changeStatus(el) {
+    el.className = 'd-status status-' + el.value;
+    updateSummary();
+}
+
+function resetAllShifts() {
+    const editor = document.getElementById('editorId').value;
+    if (!editor) { alert("請先輸入薪號解鎖後再執行重置。"); return; }
+    if (!confirm("⚠️ 確定要將【所有人員】的班表恢復為「上班 (W)」嗎？此動作無法復原。")) return;
+
+    document.querySelectorAll('.d-status').forEach(sel => {
+        sel.value = 'W';
+        sel.className = 'd-status status-W';
+    });
+    updateSummary();
+    alert("班表已重置為初始上班狀態。");
+}
+
+function autoDistributeHolidays() {
+    const editor = document.getElementById('editorId').value;
+    if (!editor) { alert("請先輸入薪號解鎖。"); return; }
+    if (!confirm("將根據設定的數量重新校正正職人員假別名稱。確定執行？")) return;
+
     const rL = parseInt(document.getElementById('ruleL').value) || 0;
     const rH = parseInt(document.getElementById('ruleH').value) || 0;
     const rN = parseInt(document.getElementById('ruleN').value) || 0;
-    
-    const allCells = Array.from(row.querySelectorAll('.d-status'));
-    let temp = allCells.map(s => s.value); 
-    
-    if (type === '正職' && ['L', 'H', 'N'].includes(el.value)) {
-        if (temp.filter(v => ['L', 'H', 'N'].includes(v)).length > (rL+rH+rN)) {
-            if (!confirm(`⚠️ ${name} 排假已超標。確認排入？`)) { el.value = 'W'; }
-        }
-    }
-    el.className = 'd-status status-' + el.value;
+
+    document.querySelectorAll('#memberList tr').forEach(row => {
+        if (row.querySelector('.m-type').value !== '正職') return;
+        const holidaySelects = Array.from(row.querySelectorAll('.d-status')).filter(sel => !['W', 'D', 'C'].includes(sel.value));
+        
+        let l = 0, h = 0, n = 0;
+        holidaySelects.forEach(sel => {
+            if (l < rL) { sel.value = 'L'; l++; }
+            else if (h < rH) { sel.value = 'H'; h++; }
+            else if (n < rN) { sel.value = 'N'; n++; }
+            else { sel.value = 'S'; }
+            sel.className = 'd-status status-' + sel.value;
+        });
+    });
     updateSummary();
+    alert("分配完成！");
 }
 
 function updateSummary() {
