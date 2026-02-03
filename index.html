@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3C 賣場智慧排班系統 V28</title>
+    <title>3C 賣場智慧排班系統 V29</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -35,7 +35,7 @@
         th:nth-child(-n+8), td:nth-child(-n+8) { position: sticky; z-index: 15; background: #fff; }
         th:nth-child(-n+8) { z-index: 26; background: var(--table-header); }
         
-        th:nth-child(1), td:nth-child(1) { left: 0; min-width: 40px; }   /* 勾選 */
+        th:nth-child(1), td:nth-child(1) { left: 0; min-width: 40px; }   
         th:nth-child(2), td:nth-child(2) { left: 40px; min-width: 55px; }  
         th:nth-child(3), td:nth-child(3) { left: 95px; min-width: 60px; } 
         th:nth-child(4), td:nth-child(4) { left: 155px; min-width: 55px; } 
@@ -71,7 +71,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h2>🛒 智慧排班系統 V28</h2>
+        <h2>🛒 智慧排班系統 V29</h2>
         <div class="editor-box" id="editorBox">
             ✍️ 薪號：<input type="text" id="editorId" placeholder="必填" oninput="toggleLock()">
             <span id="lockStatus" style="color:var(--danger); font-size: 11px;">未解鎖</span>
@@ -106,7 +106,7 @@
 </div>
 
 <script>
-const titles = ["店經理", "服務專員", "收銀-晚P", "TV股副理", "生活家電副理", "APPLE專員", "系統股副理", "電器醫生", "(13:30-21:30)", "(13:00-21:00)", "(12:30-21:30)"];
+const titles = ["店經理", "服務專員", "收銀-晚P", "TV股副理", "生活家電副理", "APPLE專員", "系統股副理", "電氣醫生", "(13:30-21:30)", "(13:00-21:00)", "(12:30-21:30)"];
 const categories = ["", "2C", "APPLE", "1C", "國際", "LG", "SONY", "三星"];
 const defaultMembers = [
     { name: "謝易辰", id: "022403", phone: "0920-520765", cat: "", title: "店經理", type: "正職" },
@@ -162,6 +162,8 @@ function addRow(pre = null) {
     const tr = document.createElement('tr');
     let catOpt = categories.map(c => `<option value="${c}" ${pre?.cat===c?'selected':''}>${c||'--'}</option>`).join('');
     let titleOpt = titles.map(t => `<option value="${t}" ${pre?.title===t?'selected':''}>${t}</option>`).join('');
+    
+    // 勾選 + 姓名固定在左側
     let html = `<td><input type="checkbox" class="row-cb"></td>
         <td><select class="m-cat">${catOpt}</select></td>
         <td><input type="text" class="m-name" value="${pre?.name||''}" style="width:55px"></td>
@@ -170,12 +172,17 @@ function addRow(pre = null) {
         <td><select class="m-title">${titleOpt}</select></td>
         <td><select class="m-type" onchange="updateSummary()"><option value="正職" ${pre?.type==='正職'?'selected':''}>正職</option><option value="PT" ${pre?.type==='PT'?'selected':''}>PT</option><option value="駐場" ${pre?.type==='駐場'?'selected':''}>駐場</option></select></td>
         <td class="m-stat" style="font-size:10px">--</td>`;
+    
+    // 排班選單：調整順序為 W > H > L
     for(let i=0; i<28; i++) {
         const v = pre?.days?.[i] || 'W';
         html += `<td><select class="d-status status-${v}" onchange="changeStatus(this, ${i})">
-            <option value="W" ${v==='W'?'selected':''}>上班</option><option value="L" ${v==='L'?'selected':''}>例假</option>
-            <option value="H" ${v==='H'?'selected':''}>休假</option><option value="N" ${v==='N'?'selected':''}>國定</option>
-            <option value="S" ${v==='S'?'selected':''}>特休</option><option value="D" ${v==='D'?'selected':''}>值星</option>
+            <option value="W" ${v==='W'?'selected':''}>上班</option>
+            <option value="H" ${v==='H'?'selected':''}>休假</option>
+            <option value="L" ${v==='L'?'selected':''}>例假</option>
+            <option value="N" ${v==='N'?'selected':''}>國定</option>
+            <option value="S" ${v==='S'?'selected':''}>特休</option>
+            <option value="D" ${v==='D'?'selected':''}>值星</option>
             <option value="C" ${v==='C'?'selected':''}>上課</option></select></td>`;
     }
     tr.innerHTML = html;
@@ -195,8 +202,8 @@ function deleteSelectedRows() {
     const editor = document.getElementById('editorId').value;
     if (!editor) { alert("請先輸入薪號。"); return; }
     const selected = document.querySelectorAll('.row-cb:checked');
-    if (selected.length === 0) { alert("請先勾選要刪除的人員。"); return; }
-    if (confirm(`確定要刪除選中的 ${selected.length} 位人員嗎？`)) {
+    if (selected.length === 0) { alert("請先勾選人員。"); return; }
+    if (confirm(`確定刪除選中的 ${selected.length} 位人員嗎？`)) {
         selected.forEach(cb => cb.closest('tr').remove());
         updateSummary();
         document.getElementById('logList').insertAdjacentHTML('afterbegin', `<div style="color:red">[${new Date().toLocaleTimeString()}] ${editor} 批量刪除了人員</div>`);
@@ -207,10 +214,8 @@ function autoDistributeHolidays() {
     const editor = document.getElementById('editorId').value;
     if (!editor) { alert("請先輸入薪號。"); return; }
     const selectedRows = Array.from(document.querySelectorAll('.row-cb:checked')).map(cb => cb.closest('tr'));
-    if (selectedRows.length === 0) { alert("請先勾選要分配的人員。"); return; }
+    if (selectedRows.length === 0) { alert("請先勾選人員。"); return; }
     
-    if (!confirm(`將針對選中的 ${selectedRows.length} 位正職人員執行雙週例假優先分配。確定執行？`)) return;
-
     const rL = parseInt(document.getElementById('ruleL').value) || 0;
     const rH = parseInt(document.getElementById('ruleH').value) || 0;
     const rN = parseInt(document.getElementById('ruleN').value) || 0;
@@ -223,6 +228,7 @@ function autoDistributeHolidays() {
         let assignedL = 0, assignedH = 0, assignedN = 0;
         let biweek1L = 0, biweek2L = 0;
 
+        // 優先確保雙週各 2 天例假
         holidayIndices.forEach(idx => {
             if (idx < 14) {
                 if (biweek1L < 2 && assignedL < rL) { selects[idx].value = 'L'; assignedL++; biweek1L++; }
@@ -231,6 +237,7 @@ function autoDistributeHolidays() {
             }
         });
 
+        // 分配其餘假別
         holidayIndices.forEach(idx => {
             const sel = selects[idx];
             if (sel.value !== 'L' || (idx < 14 ? biweek1L : biweek2L) > 2 || assignedL > rL) {
